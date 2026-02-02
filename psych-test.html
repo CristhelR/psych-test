@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Psychiatric Nursing Knowledge Check</title>
+
+<style>
+body{
+    font-family:'Segoe UI',Tahoma,sans-serif;
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: linear-gradient(-45deg,#2563eb,#7c3aed,#22c55e,#f59e0b,#ec4899);
+    background-size:400% 400%;
+    animation:bgMove 12s infinite;
+}
+@keyframes bgMove{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+}
+
+.container{
+    width:95%;
+    max-width:900px;
+    padding:28px;
+    background:rgba(255,255,255,.96);
+    border-radius:18px;
+    box-shadow:0 20px 40px rgba(0,0,0,.25);
+}
+
+.hidden{display:none;}
+h1,h2{text-align:center}
+
+input,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    font-size:16px;
+    border-radius:10px;
+}
+
+button{
+    border:none;
+    font-weight:bold;
+    background:linear-gradient(90deg,#22c55e,#2563eb);
+    color:white;
+    cursor:pointer;
+    transition:transform .2s;
+}
+button:hover{
+    transform:scale(1.05);
+}
+
+.choice{
+    border:1px solid #ddd;
+    padding:12px;
+    border-radius:10px;
+    margin-top:10px;
+    cursor:pointer;
+    transition:all .2s;
+}
+.choice:hover{background:#e0f2fe;}
+
+.correct{background:#22c55e;color:white;}
+.wrong{background:#ef4444;color:white;}
+
+.rationale{
+    margin-top:15px;
+    padding:15px;
+    background:#ede9fe;
+    border-left:6px solid #7c3aed;
+    border-radius:8px;
+    line-height:1.5;
+    white-space:pre-line;
+}
+
+.progressBar{
+    height:12px;
+    background:#ddd;
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:10px;
+}
+.progressFill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#22c55e,#2563eb);
+    transition: width .5s ease;
+}
+
+.timer{
+    text-align:center;
+    font-weight:bold;
+    color:#ef4444;
+    margin-bottom:10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- START -->
+<div class="container" id="startScreen">
+<h1>🧠 Psychiatric Nursing Challenge</h1>
+<input id="studentName" placeholder="Full Name">
+<input id="studentSection" placeholder="Section">
+<button onclick="startExam()">Start Exam 🚀</button>
+</div>
+
+<!-- EXAM -->
+<div class="container hidden" id="examScreen">
+<div id="studentInfo"></div>
+
+<div class="progressBar">
+<div id="progressFill" class="progressFill"></div>
+</div>
+
+<div class="timer">⏰ Time: <span id="time">20</span>s</div>
+
+<h2 id="question"></h2>
+<div id="choices"></div>
+
+<div id="rationale" class="rationale hidden"></div>
+
+<button id="nextBtn" disabled onclick="nextQuestion()">Next</button>
+</div>
+
+<!-- RESULT -->
+<div class="container hidden" id="resultScreen">
+<h2>📊 Results</h2>
+<p id="scoreText"></p>
+<p id="commentText"></p>
+<button onclick="location.reload()">Restart</button>
+</div>
+
+<script>
+/* ================= FULL QUESTIONS + RATIONALES ================= */
+const quiz = [
+{q:"1. A college student manages academic pressure by reorganizing priorities, seeking guidance, and maintaining peer support. Which attribute of mental well-being is most apparent?",
+c:["Emotional detachment","Environmental competence","Moral development","Cognitive rigidity"],
+a:1,
+r:"Environmental competence refers to the individual’s ability to effectively manage life demands, responsibilities, and stressors using available resources. The student demonstrates problem-solving, help-seeking, and social support, all indicators of healthy adaptation. Emotional detachment implies withdrawal, which is not shown. Moral development and cognitive rigidity do not directly address coping with stress."},
+
+{q:"2. A nurse observes that a client’s emotional reactions differ from societal norms but do not disrupt daily life. How should this behavior be interpreted?",
+c:["Pathological response","Early psychosis","Acceptable behavioral diversity","Maladaptive coping"],
+a:2,
+r:"Mental health recognizes a wide range of normal behaviors influenced by personality and culture. Behavior is considered abnormal only when it causes distress or functional impairment. Since daily functioning is intact, this represents acceptable behavioral diversity. Psychosis and maladaptive coping would interfere with reality testing or functioning."},
+
+{q:"3. Which feature MOST clearly differentiates mental illness from transient stress reactions?",
+c:["Presence of anxiety","Cultural disapproval","Duration with functional impairment","Emotional intensity"],
+a:2,
+r:"Mental illness is characterized by persistent symptoms that impair social, occupational, or daily functioning. Anxiety and intense emotions can occur in normal stress reactions. Cultural disapproval alone does not indicate illness. Duration combined with dysfunction is the key diagnostic distinction."},
+
+{q:"4. Teaching relaxation techniques and lifestyle balance to healthy individuals is an example of:",
+c:["Crisis management","Secondary prevention","Psychiatric rehabilitation","Mental health promotion"],
+a:3,
+r:"Mental health promotion focuses on strengthening well-being and preventing illness before it occurs. Teaching relaxation and balance targets healthy individuals, not those already ill. Secondary prevention involves early detection, while rehabilitation focuses on recovery from mental illness."},
+
+{q:"5. Which behavior reflects accurate reality testing?",
+c:["Interpreting neutral events as threatening","Adjusting behavior based on consequences","Avoiding unpleasant information","Suppressing emotional expression"],
+a:1,
+r:"Accurate reality testing involves perceiving situations realistically and modifying behavior appropriately. Adjusting actions based on outcomes reflects intact judgment and insight. Misinterpreting neutral events suggests paranoia. Avoidance and suppression do not indicate accurate perception of reality."},
+
+{q:"6. A client experiences persistent hallucinations that interfere with employment and relationships. This condition is best described as:",
+c:["Situational distress","Mental disorder","Adaptive reaction","Emotional imbalance"],
+a:1,
+r:"Persistent hallucinations with impaired functioning meet the criteria for a mental disorder. Situational distress is temporary and expected. Adaptive reactions help the person cope, not deteriorate. “Emotional imbalance” is vague and not a clinical diagnosis."},
+
+{q:"7. Which criterion is emphasized when a client demonstrates independent decision-making without excessive reliance on others?",
+c:["Emotional stability","Autonomy","Self-esteem","Identity integration"],
+a:1,
+r:"Autonomy refers to the ability to make independent choices and take responsibility for one’s actions. Emotional stability involves mood regulation. Self-esteem relates to self-worth, while identity integration involves a cohesive sense of self. Independence in decisions best reflects autonomy."},
+
+{q:"8. When assessing abnormal behavior, which question should the nurse prioritize?",
+c:["Is the behavior socially accepted?","Is the behavior distressing or disabling?","Is the behavior unusual?","Is the behavior emotional?"],
+a:1,
+r:"The most critical factor in identifying abnormal behavior is whether it causes distress or functional impairment. Unusual or emotional behaviors can still be normal. Social acceptance varies by culture. Nursing assessment prioritizes impact on functioning and safety."},
+
+{q:"9. A nurse plans stress-management seminars for a barangay population. This activity aligns with:",
+c:["Tertiary prevention","Psychotherapy","Mental hygiene","Clinical psychiatry"],
+a:2,
+r:"Mental hygiene focuses on maintaining mental health and preventing illness at the community level. Stress-management education supports psychological well-being. Tertiary prevention and psychotherapy target diagnosed illness. Clinical psychiatry involves medical treatment of mental disorders."},
+
+{q:"10. Which situation BEST reflects mental health rather than illness?",
+c:["Deviant behavior with impairment","Emotional discomfort without dysfunction","Persistent delusions","Loss of reality testing"],
+a:1,
+r:"Mental health allows for emotional discomfort as long as daily functioning is maintained. Mental illness is marked by impairment, delusions, or loss of reality testing. Temporary distress is a normal human experience and does not indicate pathology."},
+
+{q:"11. A client who balances impulses with realistic problem-solving demonstrates effective functioning of the:",
+c:["Id","Ego","Superego","Libido"],
+a:1,
+r:"The ego operates on the reality principle, mediating between impulses (id), moral standards (superego), and real-world demands. Realistic problem-solving and impulse control indicate a strong ego. The id seeks immediate gratification, while the superego focuses on morality and guilt. Libido refers to psychic energy, not a personality structure."},
+
+{q:"12. Excessive guilt over minor mistakes suggests dominance of which personality structure?",
+c:["Ego","Id","Superego","Self-concept"],
+a:2,
+r:"The superego represents internalized moral standards and conscience. When overly dominant, it produces excessive guilt and self-criticism even for minor errors. The ego balances reality and impulses, while the id seeks pleasure. Self-concept is not part of Freud’s structural model."},
+
+{q:"13. Thumb-sucking for comfort in a toddler reflects which psychosexual focus?",
+c:["Anal","Oral","Phallic","Latency"],
+a:1,
+r:"The oral stage focuses on pleasure derived from the mouth, including sucking and feeding. Thumb-sucking is a classic oral-stage behavior used for comfort. The anal stage involves control and elimination, while phallic and latency stages occur later in development."},
+
+{q:"14. Rigid orderliness and perfectionism in adulthood may result from fixation at which stage?",
+c:["Oral","Anal","Genital","Phallic"],
+a:1,
+r:"Anal-stage fixation may lead to traits such as orderliness, stubbornness, and perfectionism in adulthood. This stage focuses on control and autonomy related to elimination. Oral fixation leads to dependency, while genital and phallic stages focus on later psychosexual development."},
+
+{q:"15. A child who identifies strongly with the same-sex parent during early childhood is resolving which stage?",
+c:["Oral","Anal","Phallic","Latency"],
+a:2,
+r:"The phallic stage involves identification with the same-sex parent as part of resolving the Oedipus or Electra complex. This identification helps shape gender identity and moral development. Oral and anal stages occur earlier, while latency is characterized by reduced sexual interest."},
+
+{q:"16. An adolescent unsure of beliefs, career goals, and identity is struggling with:",
+c:["Intimacy vs. isolation","Identity vs. role confusion","Industry vs. inferiority","Autonomy vs. shame"],
+a:1,
+r:"According to Erikson, adolescence centers on identity versus role confusion. Uncertainty about values, career, and self-concept reflects difficulty resolving this stage. Intimacy vs. isolation occurs in young adulthood, while industry and autonomy belong to earlier childhood stages."},
+
+{q:"17. A preschool child hesitant to initiate play due to fear of mistakes reflects unresolved:",
+c:["Trust vs. mistrust","Initiative vs. guilt","Industry vs. inferiority","Identity vs. confusion"],
+a:1,
+r:"Initiative vs. guilt occurs in preschool years and focuses on developing confidence in initiating activities. Fear of making mistakes and reluctance to act indicate unresolved guilt. Industry vs. inferiority involves school-age children, while identity formation occurs in adolescence."},
+
+{q:"18. An older adult reflecting with satisfaction on life achievements demonstrates:",
+c:["Integrity vs. despair","Generativity vs. stagnation","Industry vs. inferiority","Intimacy vs. isolation"],
+a:0,
+r:"Integrity vs. despair is Erikson’s final stage, where individuals evaluate their life with acceptance and fulfillment. Satisfaction with achievements reflects ego integrity. Generativity applies to middle adulthood, while industry and intimacy occur earlier in life."},
+
+{q:"19. Understanding that quantity remains constant despite shape changes indicates mastery of:",
+c:["Egocentrism","Conservation","Abstract reasoning","Reversibility"],
+a:1,
+r:"Conservation is the ability to understand that physical quantities remain the same despite changes in appearance. This skill develops during the concrete operational stage. Egocentrism involves inability to see others’ perspectives, while abstract reasoning emerges later."},
+
+{q:"20. Logical reasoning based on tangible objects characterizes which Piaget stage?",
+c:["Preoperational","Sensorimotor","Concrete operational","Formal operational"],
+a:2,
+r:"The concrete operational stage involves logical thinking about concrete, tangible objects and events. Children can classify, sequence, and conserve information. Preoperational thinking is egocentric, sensorimotor focuses on sensory experience, and formal operational involves abstract reasoning."},
+
+{q:"21. Abstract thinking and hypothetical reasoning appear during:",
+c:["Latency","Concrete operational","Formal operational","Preoperational"],
+a:2,
+r:"According to Piaget, the formal operational stage is marked by the ability to think abstractly and consider hypothetical situations. Adolescents can reason beyond concrete objects and think about possibilities and future consequences. Concrete operational thinking is limited to tangible objects, while preoperational thinking is egocentric and symbolic."},
+
+{q:"22. Obeying rules to avoid punishment reflects which moral level?",
+c:["Conventional","Preconventional","Postconventional","Autonomous"],
+a:1,
+r:"The preconventional level of moral development is based on avoiding punishment and seeking personal reward. Moral decisions are driven by consequences rather than internalized values. Conventional morality focuses on social approval, while postconventional morality emphasizes ethical principles."},
+
+{q:"23. Valuing laws because they maintain social order demonstrates:",
+c:["Preconventional","Conventional","Postconventional","Instrumental"],
+a:1,
+r:"At the conventional level, individuals follow rules to maintain social order and gain approval from authority figures. Laws are respected because they uphold society’s structure. Preconventional morality is self-centered, while postconventional morality questions laws based on ethical principles."},
+
+{q:"24. Breaking unjust laws to protect human rights indicates:",
+c:["Stage 2 morality","Stage 3 morality","Stage 4 morality","Stage 5–6 morality"],
+a:3,
+r:"Stages 5 and 6 of Kohlberg’s theory fall under postconventional morality, where ethical principles and human rights override laws. Individuals recognize that laws can be unjust and should be changed. Earlier stages prioritize obedience and social order over universal ethics."},
+
+{q:"25. A child believing everyone shares the same viewpoint is displaying:",
+c:["Egocentrism","Conservation","Reversibility","Object permanence"],
+a:0,
+r:"Egocentrism refers to the inability to understand perspectives different from one’s own. This is common in the preoperational stage of development. Conservation and reversibility are higher cognitive skills, while object permanence develops earlier in infancy."},
+
+{q:"26. An infant learning that objects still exist when hidden demonstrates:",
+c:["Conservation","Egocentrism","Object permanence","Abstract thought"],
+a:2,
+r:"Object permanence is the understanding that objects continue to exist even when out of sight. This milestone develops during the sensorimotor stage. Conservation and abstract thinking occur much later, while egocentrism applies to early childhood cognition."},
+
+{q:"27. A client overly dependent during stress but otherwise independent is showing:",
+c:["Fixation","Regression","Repression","Suppression"],
+a:1,
+r:"Regression is a defense mechanism where an individual temporarily reverts to earlier developmental behaviors under stress. Dependency during stressful situations reflects this pattern. Fixation is a long-term developmental arrest, while repression and suppression involve managing unwanted thoughts."},
+
+{q:"28. Channeling anger into sports or art exemplifies:",
+c:["Projection","Displacement","Sublimation","Denial"],
+a:2,
+r:"Sublimation is a mature defense mechanism that redirects unacceptable impulses into socially acceptable activities. Expressing anger through sports or art prevents harm and promotes healthy coping. Projection and displacement redirect feelings onto others, while denial avoids reality."},
+
+{q:"29. Attributing one’s unacceptable traits to others reflects:",
+c:["Rationalization","Projection","Compensation","Undoing"],
+a:1,
+r:"Projection involves attributing one’s own unacceptable thoughts or feelings to others. This allows the individual to avoid internal conflict. Rationalization justifies behavior, compensation overemphasizes strengths, and undoing attempts to reverse guilt through actions."},
+
+{q:"30. Avoiding painful thoughts consciously until a later time is:",
+c:["Suppression","Repression","Denial","Regression"],
+a:0,
+r:"Suppression is the conscious decision to postpone dealing with distressing thoughts. Repression is unconscious and automatic. Denial refuses to accept reality, while regression involves reverting to earlier behaviors under stress."},
+
+{q:"31. Excessive politeness masking hostility indicates:",
+c:["Reaction formation","Identification","Displacement","Introjection"],
+a:0,
+r:"Reaction formation occurs when an individual behaves in a manner opposite to their true feelings, often to reduce anxiety. Excessive politeness hiding hostility is a classic example. Identification involves modeling behavior after others, displacement redirects emotions to safer targets, and introjection internalizes others’ values."},
+
+{q:"32. Modeling behavior after an admired figure illustrates:",
+c:["Identification","Compensation","Substitution","Repression"],
+a:0,
+r:"Identification is a defense mechanism in which an individual adopts characteristics or behaviors of a respected or admired person. Compensation involves emphasizing strengths to counterbalance weaknesses. Substitution replaces goals, and repression unconsciously blocks unacceptable thoughts."},
+
+{q:"33. Defense mechanisms become maladaptive when they:",
+c:["Are unconscious","Are socially unacceptable","Interfere with functioning","Occur during stress"],
+a:2,
+r:"Defense mechanisms are normal and adaptive when they reduce anxiety without impairing function. They become maladaptive when they disrupt social, occupational, or personal functioning. Being unconscious or occurring during stress does not automatically make a defense harmful. Social acceptability alone is insufficient."},
+
+{q:"34. A nurse notes repeated use of denial preventing treatment adherence. This suggests:",
+c:["Healthy coping","Adaptive behavior","Maladaptive defense use","Cultural practice"],
+a:2,
+r:"Denial, when overused, can prevent clients from engaging in necessary treatment, making it maladaptive. Healthy coping allows problem-solving, while adaptive defenses support adjustment. Cultural practices may influence behaviors, but denial interfering with care indicates pathology."},
+
+{q:"35. Which defense mechanism is MOST mature?",
+c:["Denial","Projection","Sublimation","Regression"],
+a:2,
+r:"Sublimation is considered a mature defense mechanism because it converts unacceptable impulses into socially acceptable or constructive activities. Denial, projection, and regression are less mature, often causing interference with functioning or reality testing."},
+
+{q:"36. Hallucinations linked to excess dopamine activity involve which pathway?",
+c:["Nigrostriatal","Mesolimbic","Tuberoinfundibular","Mesocortical"],
+a:1,
+r:"The mesolimbic pathway is associated with reward and positive psychotic symptoms such as hallucinations and delusions. The nigrostriatal pathway affects movement, tuberoinfundibular controls prolactin, and mesocortical is related to cognition and negative symptoms."},
+
+{q:"37. Parkinsonian side effects from antipsychotics result from dopamine blockade in the:",
+c:["Mesolimbic","Mesocortical","Nigrostriatal","Limbic"],
+a:2,
+r:"Extrapyramidal symptoms (EPS) arise from dopamine blockade in the nigrostriatal pathway, which regulates movement. Blockade in the mesolimbic affects psychosis, mesocortical affects cognition, and limbic structures influence emotions. Parkinsonism manifests as tremors, rigidity, and bradykinesia."},
+
+{q:"38. Depressive symptoms are commonly associated with decreased:",
+c:["Dopamine only","Serotonin and norepinephrine","GABA","Acetylcholine"],
+a:1,
+r:"Depression is strongly linked to low levels of serotonin and norepinephrine, which affect mood, motivation, and energy. Dopamine deficit may contribute to anhedonia, but serotonin and norepinephrine are primary. GABA deficiency is more associated with anxiety, acetylcholine with memory and cognition."},
+
+{q:"39. Benzodiazepines reduce anxiety by enhancing:",
+c:["Dopamine","GABA","Glutamate","Serotonin"],
+a:1,
+r:"Benzodiazepines bind to GABA-A receptors, enhancing GABA-mediated inhibition in the CNS, producing anxiolytic and sedative effects. Dopamine and serotonin are not directly affected, and glutamate is excitatory; benzodiazepines do not enhance it."},
+
+{q:"40. Memory loss in Alzheimer’s disease is linked to deficiency of:",
+c:["Dopamine","GABA","Acetylcholine","Norepinephrine"],
+a:2,
+r:"Alzheimer’s disease involves degeneration of cholinergic neurons in the basal forebrain, leading to acetylcholine deficiency, which impairs memory and learning. Dopamine affects movement and reward, GABA regulates inhibition, and norepinephrine modulates arousal and attention."},
+
+{q:"41. SSRIs improve mood primarily by:",
+c:["Blocking MAO enzymes","Inhibiting serotonin reuptake","Increasing dopamine release","Enhancing GABA activity"],
+a:1,
+r:"SSRIs (Selective Serotonin Reuptake Inhibitors) block the reuptake of serotonin at synaptic clefts, increasing its availability and improving mood. MAO inhibitors affect enzyme activity, dopamine release is not primary, and GABA enhancement is the mechanism of benzodiazepines, not SSRIs."},
+
+{q:"42. Early SSRI side effects are best managed by:",
+c:["Discontinuation","Dose doubling","Reassurance and monitoring","Switching immediately"],
+a:2,
+r:"Common early side effects (nausea, headache, mild insomnia) are usually transient. The nurse should reassure the client and monitor for improvement. Discontinuation or switching is unnecessary unless severe, and dose doubling can worsen side effects."},
+
+{q:"43. Combining SSRIs with St. John’s wort increases risk for:",
+c:["NMS","Hypertensive crisis","Serotonin syndrome","Agranulocytosis"],
+a:2,
+r:"St. John’s wort can potentiate serotonin activity. Combining with SSRIs may lead to serotonin syndrome, a potentially life-threatening condition. NMS is associated with antipsychotics, hypertensive crisis with MAOIs, and agranulocytosis with clozapine."},
+
+{q:"44. Aged cheese should be avoided with which drug class?",
+c:["SSRIs","TCAs","MAOIs","Benzodiazepines"],
+a:2,
+r:"MAOIs inhibit monoamine oxidase, which breaks down tyramine in foods. High-tyramine foods like aged cheese can cause hypertensive crisis. SSRIs, TCAs, and benzodiazepines do not have this dietary restriction."},
+
+{q:"45. Severe headache and hypertension in MAOI users indicate:",
+c:["Serotonin toxicity","Orthostatic hypotension","Hypertensive crisis","Anticholinergic effects"],
+a:2,
+r:"Hypertensive crisis is a dangerous MAOI complication caused by excessive tyramine intake. Serotonin toxicity is linked to SSRI overdose, orthostatic hypotension is a side effect of TCAs or antipsychotics, and anticholinergic effects include dry mouth and constipation."},
+
+{q:"46. Dry mouth and urinary retention with TCAs are due to:",
+c:["Dopaminergic effects","Anticholinergic action","Serotonergic excess","EPS"],
+a:1,
+r:"Tricyclic antidepressants have anticholinergic properties, causing dry mouth, constipation, blurred vision, and urinary retention. Dopamine effects relate to movement, serotonergic excess can cause nausea or serotonin syndrome, and EPS refers to antipsychotic side effects."},
+
+{q:"47. The MOST life-threatening TCA overdose effect is:",
+c:["Constipation","Sedation","Cardiac arrhythmia","Dry mucosa"],
+a:2,
+r:"TCA overdose can cause fatal cardiac arrhythmias due to sodium channel blockade. Sedation, constipation, and dry mucosa are uncomfortable but rarely life-threatening. Cardiac monitoring is critical in overdose management."},
+
+{q:"48. Muscle rigidity, fever, and confusion in antipsychotic use suggests:",
+c:["Akathisia","Dystonia","NMS","Parkinsonism"],
+a:2,
+r:"Neuroleptic Malignant Syndrome (NMS) is a rare but life-threatening reaction to antipsychotics, characterized by hyperthermia, rigidity, altered mental status, and autonomic dysfunction. Akathisia involves restlessness, dystonia involves spasms, and Parkinsonism involves tremors and rigidity without fever."},
+
+{q:"49. The FIRST nursing action in suspected NMS is to:",
+c:["Restrain the client","Stop the antipsychotic","Administer benztropine","Encourage fluids only"],
+a:1,
+r:"Immediate discontinuation of the offending antipsychotic is the priority in suspected NMS. Supportive care, fluids, and medications like dantrolene follow. Restraint is unnecessary unless client is dangerous, and benztropine addresses EPS, not NMS."},
+
+{q:"50. Restlessness and inability to sit still is termed:",
+c:["Akathisia","Dystonia","TD","Parkinsonism"],
+a:0,
+r:"Akathisia is a subjective and objective sense of inner restlessness, often caused by antipsychotics. Dystonia involves sustained muscle contractions, TD (tardive dyskinesia) involves repetitive movements, and Parkinsonism manifests as tremors, rigidity, and bradykinesia."},
+
+{q:"51. A client uses deep breathing and meditation when feeling anxious. Which coping mechanism is being demonstrated?",
+c:["Denial","Sublimation","Problem-focused coping","Regression"],
+a:2,
+r:"Problem-focused coping involves actively addressing the source of stress through practical strategies. Deep breathing and meditation help manage anxiety constructively. Denial ignores the stressor, sublimation redirects impulses creatively, and regression is reverting to earlier behaviors."},
+
+{q:"52. A patient repeatedly checks if the door is locked due to fear of burglary. This behavior is classified as:",
+c:["Obsessive-compulsive behavior","Paranoia","Phobia","Panic attack"],
+a:0,
+r:"Obsessive-compulsive behavior involves repetitive actions driven by intrusive thoughts. The patient checks locks to reduce anxiety from obsessions. Paranoia is irrational suspicion, phobia is intense fear of a specific object/situation, and panic attack involves sudden acute anxiety episodes."},
+
+{q:"53. Which client demonstrates the BEST emotional resilience?",
+c:["A client who ignores stressors","A client who uses alcohol to cope","A client who problem-solves and seeks support","A client who isolates self from others"],
+a:2,
+r:"Emotional resilience is the ability to cope adaptively with stress. Seeking support and problem-solving are positive strategies. Ignoring stressors or substance use are maladaptive, and social isolation reduces coping resources."},
+
+{q:"54. A nurse observes a client lying about alcohol use. Which defense mechanism is most likely?",
+c:["Projection","Denial","Rationalization","Reaction formation"],
+a:1,
+r:"Denial is refusing to acknowledge reality or facts. The client is not admitting alcohol use. Projection attributes one’s own traits to others, rationalization justifies behavior, and reaction formation expresses the opposite of true feelings."},
+
+{q:"55. A teenager excessively worries about grades and avoids socializing. This is indicative of:",
+c:["Generalized anxiety disorder","Adjustment disorder","Attention-deficit hyperactivity disorder","Social phobia"],
+a:0,
+r:"Generalized anxiety disorder (GAD) involves chronic, excessive worry affecting multiple life domains. Avoiding socialization due to anxiety aligns with GAD. Adjustment disorder is temporary stress reaction, ADHD affects attention and impulsivity, social phobia is fear of specific social situations."},
+
+{q:"56. Which statement BEST reflects cognitive distortion?",
+c:["“I occasionally make mistakes like everyone else.”","“If I fail this exam, my life is over.”","“I will prepare as best as I can.”","“I can ask for help when needed.”"],
+a:1,
+r:"Cognitive distortion involves exaggerated or irrational thoughts. Believing one exam failure ends life is catastrophic thinking. The other statements are rational and realistic."},
+
+{q:"57. A client claims, “I hear voices telling me to harm others.” Which type of hallucination is this?",
+c:["Visual","Auditory","Tactile","Olfactory"],
+a:1,
+r:"Auditory hallucinations involve hearing sounds or voices not present. Visual hallucinations involve seeing things, tactile involve touch, and olfactory involve smell."},
+
+{q:"58. A client feels persistently sad, with decreased appetite and sleep disturbance for over two weeks. This meets criteria for:",
+c:["Adjustment disorder","Major depressive disorder","Bipolar disorder","Dysthymia"],
+a:1,
+r:"Major depressive disorder is diagnosed when depressive symptoms persist for at least two weeks and cause functional impairment. Adjustment disorder is short-term reaction, dysthymia is chronic but less severe, bipolar disorder includes mood swings with mania."},
+
+{q:"59. Which intervention is most appropriate for a patient with acute mania?",
+c:["Encourage social activities","Set firm limits and provide structure","Promote long-term reflection","Allow unsupervised spending"],
+a:1,
+r:"Patients in acute mania benefit from structure, firm limits, and safety precautions. Encouraging excessive socialization or unsupervised spending may exacerbate symptoms. Reflection is difficult during mania due to distractibility."},
+
+{q:"60. A nurse notes a client withdrawing from activities and friends. The nurse should recognize this as:",
+c:["Social withdrawal","Regression","Denial","Compensation"],
+a:0,
+r:"Social withdrawal is voluntary reduction in social interaction, often due to depression, anxiety, or other mental health issues. Regression involves reverting to earlier behaviors, denial is ignoring reality, and compensation is overemphasizing other skills."},
+
+{q:"61. Which neurotransmitter imbalance is most associated with schizophrenia’s positive symptoms?",
+c:["Serotonin","Dopamine","GABA","Acetylcholine"],
+a:1,
+r:"Excess dopamine activity in the mesolimbic pathway contributes to positive symptoms like hallucinations and delusions. Serotonin is more linked to mood, GABA regulates inhibition, acetylcholine is associated with memory."},
+
+{q:"62. A client with schizophrenia repeatedly washes hands excessively due to fear of contamination. This represents:",
+c:["Compulsion","Obsessive thought","Delusion","Illusion"],
+a:0,
+r:"Compulsions are repetitive behaviors performed to reduce anxiety from obsessions. Obsessive thoughts are the intrusive fears, delusions are false beliefs, illusions are misperceptions of real stimuli."},
+
+{q:"63. Which intervention is priority for a patient experiencing command auditory hallucinations?",
+c:["Ignore the hallucinations","Assess risk and ensure safety","Encourage social interaction","Promote journaling"],
+a:1,
+r:"Command hallucinations may instruct harmful behavior; assessing risk and ensuring safety is critical. Ignoring, journaling, or social interaction are secondary supportive interventions."},
+
+{q:"64. A patient reports feeling numb and disconnected after trauma. This is BEST described as:",
+c:["Dissociation","Depression","Anxiety","Psychosis"],
+a:0,
+r:"Dissociation involves disconnection from self or environment, often after trauma. Depression involves persistent sadness, anxiety involves worry, psychosis involves impaired reality testing."},
+
+{q:"65. Which behavior indicates mania rather than hypomania?",
+c:["Mood elevation without impairment","Mood elevation with functional impairment","Increased creativity","Mild distractibility"],
+a:1,
+r:"Mania involves elevated mood with significant impairment in social/occupational functioning. Hypomania is less severe and does not impair daily life."},
+
+{q:"66. A client refuses to discuss traumatic events, claiming “it didn’t happen.” This is:",
+c:["Denial","Projection","Sublimation","Regression"],
+a:0,
+r:"Denial is refusing to acknowledge reality of a traumatic event. Projection attributes thoughts to others, sublimation redirects impulses, regression reverts to earlier behavior."},
+
+{q:"67. A patient compulsively counts objects to reduce anxiety. Which therapy addresses this behavior MOST effectively?",
+c:["Psychoanalysis","Cognitive-behavioral therapy","Humanistic therapy","Electroconvulsive therapy"],
+a:1,
+r:"Cognitive-behavioral therapy (CBT) is effective for OCD, targeting maladaptive thoughts and behaviors like counting rituals. Psychoanalysis explores unconscious motives, humanistic therapy focuses on self-actualization, ECT is for severe mood disorders."},
+
+{q:"68. A client believes a neighbor is plotting against them despite evidence to the contrary. This is classified as:",
+c:["Illusion","Delusion","Hallucination","Confabulation"],
+a:1,
+r:"Delusions are fixed, false beliefs not based in reality. Illusions are misperceptions, hallucinations are false sensory perceptions, confabulation is fabricating memories."},
+
+{q:"69. Which symptom is a negative symptom of schizophrenia?",
+c:["Auditory hallucinations","Flat affect","Delusions","Agitation"],
+a:1,
+r:"Flat affect is a negative symptom involving reduced emotional expression. Hallucinations and delusions are positive symptoms, agitation is not specific to schizophrenia."},
+
+{q:"70. A client repeats phrases involuntarily. This is termed:",
+c:["Echolalia","Echopraxia","Palilalia","Neologism"],
+a:2,
+r:"Palilalia is the involuntary repetition of words or phrases. Echolalia is repeating another person’s words, echopraxia is repeating movements, neologism involves made-up words."},
+
+{q:"71. A patient experiences sudden fear with palpitations and shortness of breath. This is:",
+c:["Generalized anxiety disorder","Panic attack","Phobia","Adjustment disorder"],
+a:1,
+r:"Panic attacks involve abrupt episodes of intense fear with physical symptoms like palpitations and dyspnea. GAD is chronic worry, phobia is fear of specific object/situation, adjustment disorder is stress-related but less intense."},
+
+{q:"72. Which intervention is priority during a panic attack?",
+c:["Encourage problem-solving","Guide slow breathing and grounding","Ignore symptoms","Promote group therapy"],
+a:1,
+r:"During a panic attack, immediate interventions include grounding and slow breathing to reduce physiological arousal. Problem-solving, group therapy, or ignoring are not effective acutely."},
+
+{q:"73. A client worries excessively about work performance but remains functional. This is:",
+c:["Panic disorder","Generalized anxiety disorder","Adjustment disorder","Obsessive-compulsive disorder"],
+a:1,
+r:"GAD is characterized by excessive, chronic worry that is difficult to control. Functional impairment may be minimal initially. Panic disorder involves sudden attacks, adjustment disorder is short-term, OCD includes compulsions."},
+
+{q:"74. Which nursing action demonstrates psychoeducation for anxiety?",
+c:["Instructing relaxation techniques","Administering anxiolytic medication","Restricting patient activities","Encouraging isolation"],
+a:0,
+r:"Psychoeducation involves teaching clients skills to manage symptoms, such as relaxation or coping strategies. Medication is treatment, restrictions or isolation are not educational interventions."},
+
+{q:"75. A client believes their thoughts are broadcast to others. This is:",
+c:["Delusion of reference","Thought broadcasting","Grandiose delusion","Depersonalization"],
+a:1,
+r:"Thought broadcasting is a delusion where one believes thoughts are externally accessible. Delusion of reference involves personal significance to neutral events, grandiose delusion involves exaggerated self-importance, depersonalization is feeling detached from self."},
+
+{q:"76. A patient reports feeling unreal and detached from surroundings. This is:",
+c:["Derealization","Depersonalization","Psychosis","Anxiety"],
+a:0,
+r:"Derealization is feeling that the environment is unreal. Depersonalization is feeling detached from self. Psychosis involves impaired reality testing, anxiety is excessive worry."},
+
+{q:"77. Which approach is MOST appropriate for a patient with social phobia?",
+c:["Gradual exposure to feared situations","Forced participation in social events","Avoidance","High-dose benzodiazepines"],
+a:0,
+r:"Gradual exposure (systematic desensitization) helps patients confront feared social situations. Avoidance reinforces fear, forced participation may worsen anxiety, medication is adjunctive, not primary."},
+
+{q:"78. A patient excessively checks homework repeatedly due to fear of mistakes. This is:",
+c:["Compulsion","Obsession","Phobia","Anxiety"],
+a:0,
+r:"Compulsions are repetitive behaviors performed to reduce anxiety from obsessions. Obsessions are the intrusive thoughts, phobia is fear of objects/situations, general anxiety is broader worry."},
+
+{q:"79. Which symptom indicates severe depression?",
+c:["Mild sadness","Anhedonia","Occasional worry","Low energy for 1–2 days"],
+a:1,
+r:"Anhedonia, or loss of pleasure in usual activities, is a hallmark of major depression. Mild sadness or brief low energy are not severe symptoms."},
+
+{q:"80. A patient feels worthless and guilty with suicidal thoughts. Nursing priority is:",
+c:["Monitor for safety and implement suicide precautions","Encourage journaling","Provide social support","Promote sleep hygiene"],
+a:0,
+r:"Suicidal ideation requires immediate safety interventions, including monitoring, suicide precautions, and assessment. Journaling, social support, or sleep hygiene are secondary supportive measures."},
+
+{q:"81. Which nursing intervention reduces agitation in a manic patient?",
+c:["Providing structured environment","Allowing unrestricted activities","Encouraging debate","Promoting long group sessions"],
+a:0,
+r:"A structured, low-stimulation environment helps reduce manic agitation. Unrestricted activities, debates, or large groups may increase stimulation and exacerbate symptoms."},
+
+{q:"82. A client with PTSD has recurrent nightmares and flashbacks. Which intervention is most effective?",
+c:["Exposure therapy","Psychoanalysis","Group discussion only","Ignoring symptoms"],
+a:0,
+r:"Exposure therapy helps patients process traumatic memories safely, reducing PTSD symptoms. Psychoanalysis is less structured, group discussion alone is insufficient, and ignoring symptoms is ineffective."},
+
+{q:"83. Which statement reflects cognitive distortion in depression?",
+c:["“I sometimes make mistakes.”","“I am a total failure.”","“I feel sad sometimes.”","“I will try again tomorrow.”"],
+a:1,
+r:"“I am a total failure” exemplifies all-or-nothing thinking, a common cognitive distortion in depression. The other statements are realistic or adaptive."},
+
+{q:"84. A client believes their food is poisoned despite reassurance. This is:",
+c:["Paranoid delusion","Illusion","Hallucination","Confabulation"],
+a:0,
+r:"Paranoid delusion involves a fixed false belief of being harmed. Illusions are misperceptions, hallucinations are false sensory perceptions, confabulation is memory fabrication."},
+
+{q:"85. Which therapy is most effective for OCD?",
+c:["Cognitive-behavioral therapy","Psychoanalysis","Client-centered therapy","Group therapy"],
+a:0,
+r:"CBT, particularly exposure and response prevention, is highly effective for OCD. Other therapies may offer support but are less effective for symptom reduction."},
+
+{q:"86. Which intervention is priority for a severely depressed client refusing food and fluids?",
+c:["Monitor and maintain hydration and nutrition","Encourage journaling","Provide social support","Teach relaxation techniques"],
+a:0,
+r:"Severely depressed clients at risk for dehydration or malnutrition require immediate monitoring and support for basic physiological needs. Journaling, support, and relaxation are secondary interventions."},
+
+{q:"87. A patient experiences auditory hallucinations but maintains insight. This is:",
+c:["Psychotic disorder","Schizophreniform disorder","Psychosis with preserved insight","Bipolar disorder"],
+a:2,
+r:"Some patients experience hallucinations yet recognize them as symptoms, reflecting preserved insight. This is not full psychosis, schizophrenia requires functional impairment, bipolar disorder involves mood episodes."},
+
+{q:"88. Which defense mechanism is indicated when a client uses humor to cope with stress?",
+c:["Sublimation","Reaction formation","Denial","Displacement"],
+a:0,
+r:"Sublimation redirects emotions into socially acceptable or constructive actions, such as humor. Reaction formation is opposite behavior, denial avoids reality, displacement redirects emotions to a safer target."},
+
+{q:"89. A nurse observes a patient with catatonia. Which is an expected finding?",
+c:["Increased motor activity","Mutism and stupor","Hallucinations","Mania"],
+a:1,
+r:"Catatonia often involves motor immobility, mutism, stupor, or rigidity. Increased activity suggests mania, hallucinations may occur in other disorders but not specifically catatonia."},
+
+{q:"90. Which intervention is appropriate for a catatonic patient?",
+c:["Encourage verbal expression only","Ensure safety, nutrition, and hydration","Force activity","Ignore immobility"],
+a:1,
+r:"Safety, maintaining nutrition and hydration, and monitoring medical status are priorities for catatonic patients. Encouraging expression is limited due to immobility; forcing activity or ignoring risks harm."},
+
+{q:"91. Which is a hallmark of borderline personality disorder?",
+c:["Stable relationships","Fear of abandonment","Flat affect","Grandiosity"],
+a:1,
+r:"Borderline personality disorder is characterized by intense fear of abandonment and unstable relationships. Stable relationships, flat affect, and grandiosity suggest other disorders."},
+
+{q:"92. A patient engages in self-harm to relieve emotional pain. This is:",
+c:["Suicidal attempt","Non-suicidal self-injury","Depression","Psychosis"],
+a:1,
+r:"Non-suicidal self-injury is deliberate self-harm without intent to die, often to cope with emotional distress. Suicidal attempt implies intent to end life."},
+
+{q:"93. Which symptom differentiates bipolar depression from major depressive disorder?",
+c:["Mood swings with periods of elevated mood","Persistent sadness","Loss of interest","Sleep disturbance"],
+a:0,
+r:"Bipolar depression includes depressive episodes alternating with manic or hypomanic periods. Major depressive disorder lacks elevated mood episodes."},
+
+{q:"94. A client with GAD experiences muscle tension, irritability, and restlessness. Nursing priority is:",
+c:["Administer high-dose antidepressants immediately","Teach relaxation and coping techniques","Ignore mild symptoms","Promote isolation"],
+a:1,
+r:"Teaching relaxation and coping techniques helps reduce physiological and psychological symptoms of anxiety. Immediate high-dose meds, ignoring, or isolation are inappropriate first-line interventions."},
+
+{q:"95. A patient believes their thoughts are being stolen via the television. This is:",
+c:["Thought insertion","Thought withdrawal","Delusion of control","Paranoid delusion"],
+a:1,
+r:"Thought withdrawal is a delusion in which the patient believes thoughts are being removed from their mind. Thought insertion is adding thoughts, delusion of control involves being controlled externally, paranoid delusion is general false suspicion."},
+
+{q:"96. A client repeatedly taps objects to prevent harm from occurring. This is:",
+c:["Compulsion","Obsession","Phobia","Anxiety"],
+a:0,
+r:"Compulsions are repetitive behaviors performed to reduce anxiety. Obsessions are intrusive thoughts, phobia is fear of objects/situations, anxiety is general worry."},
+
+{q:"97. Which nursing action supports autonomy in psychiatric patients?",
+c:["Making all decisions for the patient","Encouraging informed choices","Ignoring patient preferences","Restricting communication"],
+a:1,
+r:"Supporting autonomy involves encouraging informed decision-making and respecting preferences. Making decisions, ignoring, or restricting communication undermines autonomy."},
+
+{q:"98. A patient experiencing hallucinations states, “I know these voices are not real.” This demonstrates:",
+c:["Loss of insight","Preserved insight","Psychosis","Delirium"],
+a:1,
+r:"Preserved insight occurs when patients recognize their hallucinations as symptoms of illness. Loss of insight indicates unawareness of illness, psychosis may be present with impaired insight, delirium involves acute confusion."},
+
+{q:"99. Which client behavior is MOST consistent with mature defense mechanisms?",
+c:["Using humor and sublimation to cope","Isolating self during stress","Regression to childlike behaviors","Denial of reality"],
+a:0,
+r:"Mature defense mechanisms include humor, sublimation, and problem-solving. Isolation, regression, and denial are less adaptive."},
+
+{q:"100. A nurse teaches a client to identify and challenge irrational thoughts. This is an example of:",
+c:["Cognitive-behavioral therapy","Psychoanalysis","Humanistic therapy","Supportive therapy"],
+a:0,
+r:"Cognitive-behavioral therapy helps clients identify, evaluate, and modify distorted thoughts to reduce maladaptive behaviors and emotions. Psychoanalysis explores unconscious motives, humanistic therapy focuses on self-actualization, supportive therapy reinforces coping."}
+];
+
+/* ================= LOGIC ================= */
+let index = 0, score = 0, timer, countdown, answered = false;
+
+// GET DOM ELEMENTS
+const startScreen = document.getElementById("startScreen");
+const examScreen = document.getElementById("examScreen");
+const resultScreen = document.getElementById("resultScreen");
+
+const studentName = document.getElementById("studentName");
+const studentSection = document.getElementById("studentSection");
+
+const studentInfo = document.getElementById("studentInfo");
+const progressFill = document.getElementById("progressFill");
+const question = document.getElementById("question");
+const choices = document.getElementById("choices");
+const rationale = document.getElementById("rationale");
+const nextBtn = document.getElementById("nextBtn");
+const time = document.getElementById("time");
+const scoreText = document.getElementById("scoreText");
+const commentText = document.getElementById("commentText");
+
+function startExam() {
+    if (!studentName.value || !studentSection.value) {
+        alert("Please enter your name and section!");
+        return;
+    }
+    startScreen.classList.add("hidden");
+    examScreen.classList.remove("hidden");
+    studentInfo.textContent = `Student: ${studentName.value} | Section: ${studentSection.value}`;
+    loadQuestion();
+}
+
+function loadQuestion() {
+    answered = false;
+    nextBtn.disabled = true;
+    choices.innerHTML = "";
+    rationale.classList.add("hidden");
+
+    question.textContent = quiz[index].q;
+    progressFill.style.width = ((index) / quiz.length) * 100 + "%";
+
+    quiz[index].c.forEach((text, i) => {
+        let div = document.createElement("div");
+        div.className = "choice";
+        div.textContent = text;
+        div.onclick = () => answer(i);
+        choices.appendChild(div);
+    });
+
+    startTimer();
+}
+
+function startTimer() {
+    clearInterval(timer);
+    countdown = 20;
+    time.textContent = countdown;
+    timer = setInterval(() => {
+        countdown--;
+        time.textContent = countdown;
+        if (countdown <= 0) {
+            clearInterval(timer);
+            answer(-1); // auto wrong if time runs out
+        }
+    }, 1000);
+}
+
+function answer(i) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timer);
+
+    let correct = quiz[index].a;
+
+    [...choices.children].forEach((el, idx) => {
+        if (idx === correct) el.classList.add("correct");
+        else if (idx === i) el.classList.add("wrong");
+    });
+
+    if (i === correct) score++;
+
+    rationale.innerHTML = "<b>Rationale:</b><br>" + quiz[index].r;
+    rationale.classList.remove("hidden");
+
+    nextBtn.disabled = false;
+    progressFill.style.width = ((index + 1) / quiz.length) * 100 + "%";
+}
+
+function nextQuestion() {
+    index++;
+    if (index < quiz.length) loadQuestion();
+    else showResult();
+}
+
+function showResult() {
+    examScreen.classList.add("hidden");
+    resultScreen.classList.remove("hidden");
+
+    let percent = Math.round((score / quiz.length) * 100);
+    scoreText.textContent = `Final Score: ${score}/${quiz.length} (${percent}%)`;
+
+    // Add comment based on score
+    if (percent >= 90) commentText.textContent = "Excellent work! 🏆";
+    else if (percent >= 75) commentText.textContent = "Good job! 👍 Keep improving.";
+    else if (percent >= 50) commentText.textContent = "Fair performance. Try to review more. 📖";
+    else commentText.textContent = "Needs improvement. Consider revising key concepts. ⚠️";
+
+    // Auto save to Google Sheets
+    fetch("https://script.google.com/macros/s/AKfycbypENCNHCZIhXFw8P7uP5MIU30Ayr40iZV379MqfggvduORVlROHNCEJpl3U_KEdKM1/exec", {
+        method: "POST",
+        body: JSON.stringify({
+            name: studentName.value,
+            section: studentSection.value,
+            score: score,
+            total: quiz.length,
+            percent: percent
+        })
+    })
+    .then(() => console.log("Saved to Google Sheet"))
+    .catch(() => console.log("Save failed"));
+}
+</script>
+</body>
+</html>
